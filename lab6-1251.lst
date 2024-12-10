@@ -1,0 +1,58 @@
+Microsoft (R) Macro Assembler (x64) Version 14.29.30147.0   12/10/24 10:16:20
+lab6-1251.asm						     Page 1 - 1
+
+
+				extrn ExitProcess :proc,
+				      MessageBoxA :proc
+				
+ 00000000			.data
+ 00000000 C0 E1 EE E1 E0	caption db 'Абоба', 0
+	   00
+ 00000006 C3 F0 E8 E3 EE	message db 'Григорьев Данила, 251',  0
+	   F0 FC E5 E2 20
+	   C4 E0 ED E8 EB
+	   E0 2C 20 32 35
+	   31 00
+				
+ 00000000			.code
+ 00000000			mainCRTStartup proc
+ 00000000  48/ 83 EC 28		  sub RSP, 8*5
+				
+ 00000004  48/ 33 C9		  xor RCX, RCX
+ 00000007  48/ 8D 15		  lea RDX, message
+	   00000006 R
+ 0000000E  4C/ 8D 05		  lea R8, caption
+	   00000000 R
+ 00000015  4D/ 33 C9		  xor R9, R9
+				
+ 00000018  E8 00000000 E	  call MessageBoxA
+				
+ 0000001D  48/ 33 C9		  xor RCX, RCX
+				
+ 00000020  E8 00000000 E	  call ExitProcess
+ 00000025			mainCRTStartup endp
+				end
+Microsoft (R) Macro Assembler (x64) Version 14.29.30147.0   12/10/24 10:16:20
+lab6-1251.asm						     Symbols 2 - 1
+
+
+
+
+Procedures, parameters, and locals:
+
+                N a m e                 Type     Value    Attr
+
+mainCRTStartup . . . . . . . . .	P 	 00000000 _TEXT	Length= 00000025 Public
+
+
+Symbols:
+
+                N a m e                 Type     Value    Attr
+
+ExitProcess  . . . . . . . . . .	L 	 00000000 External
+MessageBoxA  . . . . . . . . . .	L 	 00000000 External
+caption  . . . . . . . . . . . .	Byte	 00000000 _DATA	
+message  . . . . . . . . . . . .	Byte	 00000006 _DATA	
+
+	   0 Warnings
+	   0 Errors
