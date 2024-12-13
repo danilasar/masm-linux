@@ -1,3 +1,4 @@
+#!/bin/sh
 #iconv -f utf-8 -t cp1251 $1.asm > $1-1251.asm
 wine ml64.exe -c -Zi -Fl -nologo $1.asm
 if [ $? -eq 0 ]; then
