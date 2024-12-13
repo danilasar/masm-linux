@@ -1,4 +1,5 @@
 #!/bin/sh
+eval SOURCE=$(realpath $(dirname "$0"))
 if [ -z "$1" ]; then
     echo "Нет опций сборки. Используй флаг -h для справки"
     exit -1
@@ -10,7 +11,7 @@ function check_arg(){
 	fi
 }
 function parse_param() {
-    while getopts :rhi:o:cv opt; do
+    while getopts :frhi:o:l:c opt; do
         case $opt in
             h)
                 echo "build [-hfr] [-o <имя_выхода>] [-c [<вход>:<выход>]] [-l библиотеки] <имя_входа>,"
@@ -73,13 +74,17 @@ function parse_param() {
     done
 }
 function build() {
+    echo $OPTION_FILENAME
+    #cd ${SOURCE}
+    cd $(dirname $OPTION_FILENAME)
     if $OPTION_UCONV; then
         iconv -f ${OPTION_INPUT_ENCODING} -t ${OPTION_OUTPUT_ENCODING} ${OPTION_INPUT_FILENAME}.asm > ${OPTION_FILENAME}.asm
     fi
-    wine ml64.exe -c -Zi -Fl -nologo ${OPTION_FILENAME}.asm
+    wine $SOURCE/ml64.exe -c -Zi -Fl -nologo $(winepath -w ${OPTION_FILENAME}.asm)
     if [ $? -eq 0 ]; then
         echo Ассемблирование успешно
-        wine link.exe /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} ${OPTION_FILENAME}.obj
+        echo wine $SOURCE/link.exe /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} $(winepath -w ${OPTION_FILENAME}).obj
+        wine $SOURCE/link.exe /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} $(winepath -w ${OPTION_FILENAME}).obj
         if [ $? -eq 0 ]; then
             echo Компоновка завершена
             if $OPTION_CUSTOM_OUTPUT_FILENAME; then
@@ -89,7 +94,7 @@ function build() {
                 OPTION_OUTPUT_FILENAME=${OPTION_FILENAME}.exe
             fi
             if $OPTION_RUN; then
-                wine ${OPTION_OUTPUT_FILENAME}
+                wine $(winepath -w ${OPTION_OUTPUT_FILENAME})
             fi
         else
             echo Ошибка компоновки
@@ -107,13 +112,21 @@ function flush() {
     fi
 }
 
+eval DEFAULT_LIBS_ARRAY=(kernel32.lib User32.Lib WinMM.Lib ntdll.lib AdvAPI32.Lib)
+eval DEFAULT_LIBS_STR=""
+for lib in ${DEFAULT_LIBS_ARRAY[@]}; do 
+    DEFAULT_LIBS_STR="$DEFAULT_LIBS_STR $(winepath -w ${SOURCE}/../lib/x64/${lib})"
+done
+
 
 
 eval OPTION_RUN=false
 eval OPTION_UCONV=false
 eval OPTION_FLUSH=true
 eval OPTION_CUSTOM_OUTPUT_FILENAME=false
-OPTION_LIBS="lib/x64/kernel32.lib lib/x64/User32.Lib lib/x64/WinMM.Lib lib/x64/ntdll.lib lib/x64/AdvAPI32.Lib"
+#OPTION_LIBS="${SOURCE}/../lib/x64/kernel32.lib ${SOURCE}/../lib/x64/User32.Lib ${SOURCE}/../lib/x64/WinMM.Lib ${SOURCE}../lib/x64/ntdll.lib ${SOURCE}/../lib/x64/AdvAPI32.Lib"
+OPTION_LIBS=$DEFAULT_LIBS_STR
+
 parse_param "$@"
 shift $((OPTIND - 1))
 if [ "$#" -ne 1 ]; then
@@ -126,5 +139,7 @@ if $OPTION_UCONV; then
 else
     eval OPTION_FILENAME=${OPTION_INPUT_FILENAME}
 fi
+echo $OPTION_FILENAME
+eval OPTION_FILENAME=$(realpath $OPTION_FILENAME)
 build
 flush
