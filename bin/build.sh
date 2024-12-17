@@ -74,12 +74,12 @@ function parse_param() {
     done
 }
 function build() {
-    echo $OPTION_FILENAME
     #cd ${SOURCE}
     cd $(dirname $OPTION_FILENAME)
     if $OPTION_UCONV; then
         iconv -f ${OPTION_INPUT_ENCODING} -t ${OPTION_OUTPUT_ENCODING} ${OPTION_INPUT_FILENAME}.asm > ${OPTION_FILENAME}.asm
     fi
+    echo wine $SOURCE/ml64.exe -c -Zi -Fl -nologo "$(winepath -w ${OPTION_FILENAME}.asm)"
     wine $SOURCE/ml64.exe -c -Zi -Fl -nologo "$(winepath -w ${OPTION_FILENAME}.asm)"
     if [ $? -eq 0 ]; then
         echo Ассемблирование успешно
@@ -139,7 +139,6 @@ if $OPTION_UCONV; then
 else
     eval OPTION_FILENAME=${OPTION_INPUT_FILENAME}
 fi
-echo $OPTION_FILENAME
 eval OPTION_FILENAME=$(realpath $OPTION_FILENAME)
 build
 flush
