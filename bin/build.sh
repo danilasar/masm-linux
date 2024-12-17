@@ -80,7 +80,7 @@ function build() {
     if $OPTION_UCONV; then
         iconv -f ${OPTION_INPUT_ENCODING} -t ${OPTION_OUTPUT_ENCODING} ${OPTION_INPUT_FILENAME}.asm > ${OPTION_FILENAME}.asm
     fi
-    wine $SOURCE/ml64.exe -c -Zi -Fl -nologo $(winepath -w ${OPTION_FILENAME}.asm)
+    wine $SOURCE/ml64.exe -c -Zi -Fl -nologo "$(winepath -w ${OPTION_FILENAME}.asm)"
     if [ $? -eq 0 ]; then
         echo Ассемблирование успешно
         echo wine $SOURCE/link.exe /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} $(winepath -w ${OPTION_FILENAME}).obj
