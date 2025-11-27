@@ -1,5 +1,5 @@
 #!/bin/sh
-eval SOURCE=$(realpath $(dirname "$0"))
+eval SOURCE=$(cd "$(dirname "$0")" && pwd)
 if [ -z "$1" ]; then
     echo "Нет опций сборки. Используй флаг -h для справки"
     exit -1
@@ -139,6 +139,6 @@ if $OPTION_UCONV; then
 else
     eval OPTION_FILENAME=${OPTION_INPUT_FILENAME}
 fi
-eval OPTION_FILENAME=$(realpath $OPTION_FILENAME)
+OPTION_FILENAME=$(pwd)/$(basename "$OPTION_FILENAME")
 build
 flush
