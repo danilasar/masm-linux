@@ -1,6 +1,13 @@
 # MASM для Линукса
 ## Требования
 Для корректной работы компилятора masm достаточно лишь установленного wine.
+## Установка
+1. Установить git и wine
+2. 
+```sh
+git clone https://github.com/danilasar/masm-linux.git /opt/masm
+ln -s /opt/masm/bin/masm /usr/bin/masm
+```
 ## Как этим пользоваться?
 ```sh
 masm [-hfr] [-o <имя_выхода>] [-c [<вход>:<выход>]] [-l библиотеки] <имя_входа>
