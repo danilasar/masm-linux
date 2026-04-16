@@ -1,9 +1,25 @@
 #!/bin/sh
-eval SOURCE=$(realpath $(dirname "$0"))
-if [ -z "$1" ]; then
-    echo "Нет опций сборки. Используй флаг -h для справки"
-    exit -1
-fi
+realpath() (
+	mode="-L"
+	while getopts "LP" opt; do
+		case "$opt" in
+			L) mode="-L" ;;
+			P) mode="-P" ;;
+			*) echo "Usage: realpath [-L | -P] path" >&2; exit 1 ;;
+		esac
+	done
+	shift $((OPTIND - 1))
+    file=
+    path="${1:-.}"
+    [ -d "$path" ] || {
+        file=/$(basename -- "$path")
+        path=$(dirname -- "$path")
+    }
+    {
+        path=$(CDPATH='' cd "$mode" -- "$path" && pwd "$mode")$file
+    } || exit $?
+    printf %s\\n "/${path#"${path%%[!/]*}"}"
+)
 function check_arg(){
 	if [[ $2 == -* ]]; then 
 		echo "Флаг $1 требует наличие аргумента" >&2
@@ -14,7 +30,7 @@ function parse_param() {
     while getopts :frhi:o:l:c opt; do
         case $opt in
             h)
-                echo "build [-hfr] [-o <имя_выхода>] [-c [<вход>:<выход>]] [-l библиотеки] <имя_входа>,"
+                echo "masm [-hfr] [-o <имя_выхода>] [-c [<вход>:<выход>]] [-l библиотеки] <имя_входа>,"
                 echo " где имя_входа  - имя исходного файла без расширения,"
                 echo "   а библиотеки - lib-файлы через пробел "
                 echo ""
@@ -74,17 +90,17 @@ function parse_param() {
     done
 }
 function build() {
-    #cd ${SOURCE}
     cd $(dirname $OPTION_FILENAME)
     if $OPTION_UCONV; then
         iconv -f ${OPTION_INPUT_ENCODING} -t ${OPTION_OUTPUT_ENCODING} ${OPTION_INPUT_FILENAME}.asm > ${OPTION_FILENAME}.asm
     fi
-    echo wine $SOURCE/ml64.exe -c -Zi -Fl -nologo "$(winepath -w ${OPTION_FILENAME}.asm)"
-    wine $SOURCE/ml64.exe -c -Zi -Fl -nologo "$(winepath -w ${OPTION_FILENAME}.asm)"
+    echo wine $SOURCE/libexec/ml64.exe -c -Zi -Fl -nologo "$(winepath -w ${OPTION_FILENAME}.asm)"
+    wine "$SOURCE/libexec/ml64.exe" -c -Zi -Fl -nologo "$(winepath -w ${OPTION_FILENAME}.asm)"
     if [ $? -eq 0 ]; then
         echo Ассемблирование успешно
-        echo wine $SOURCE/link.exe /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} $(winepath -w ${OPTION_FILENAME}).obj
-        wine $SOURCE/link.exe /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} $(winepath -w ${OPTION_FILENAME}).obj
+		echo "Исполльзую библиотеки: ${OPTION_LIBS}"
+        echo wine $SOURCE/libexec/link.exe /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} $(winepath -w ${OPTION_FILENAME}).obj
+        wine "$SOURCE/libexec/link.exe" /DEBUG /MAP /SUBSYSTEM:CONSOLE ${OPTION_LIBS} $(winepath -w ${OPTION_FILENAME}).obj
         if [ $? -eq 0 ]; then
             echo Компоновка завершена
             if $OPTION_CUSTOM_OUTPUT_FILENAME; then
@@ -111,20 +127,32 @@ function flush() {
         rm ${OPTION_FILENAME}.{obj,lst,map,pdb,ilk}
     fi
 }
+get_default_libs_str() (
+	set -- kernel32.lib User32.Lib WinMM.Lib ntdll.lib AdvAPI32.Lib
+	res=""
+	for lib in "$@"; do
+        w_path=$(winepath -w "${SOURCE}/lib/x64/${lib}")
+        if [ -z "$res" ]; then
+            res="$w_path"
+        else
+            res="${res} ${w_path}"
+        fi
+    done
+    printf '%s\n' "$res"
+)
 
-eval DEFAULT_LIBS_ARRAY=(kernel32.lib User32.Lib WinMM.Lib ntdll.lib AdvAPI32.Lib)
-eval DEFAULT_LIBS_STR=""
-for lib in ${DEFAULT_LIBS_ARRAY[@]}; do 
-    DEFAULT_LIBS_STR="$DEFAULT_LIBS_STR $(winepath -w ${SOURCE}/../lib/x64/${lib})"
-done
+SOURCE=$(realpath -P "$(dirname "$0")/..")
+if [ -z "$1" ]; then
+    echo "Нет опций сборки. Используй флаг -h для справки"
+    exit -1
+fi
 
+DEFAULT_LIBS_STR=$(get_default_libs_str)
 
-
-eval OPTION_RUN=false
-eval OPTION_UCONV=false
-eval OPTION_FLUSH=true
-eval OPTION_CUSTOM_OUTPUT_FILENAME=false
-#OPTION_LIBS="${SOURCE}/../lib/x64/kernel32.lib ${SOURCE}/../lib/x64/User32.Lib ${SOURCE}/../lib/x64/WinMM.Lib ${SOURCE}../lib/x64/ntdll.lib ${SOURCE}/../lib/x64/AdvAPI32.Lib"
+OPTION_RUN=false
+OPTION_UCONV=false
+OPTION_FLUSH=true
+OPTION_CUSTOM_OUTPUT_FILENAME=false
 OPTION_LIBS=$DEFAULT_LIBS_STR
 
 parse_param "$@"
@@ -139,6 +167,6 @@ if $OPTION_UCONV; then
 else
     eval OPTION_FILENAME=${OPTION_INPUT_FILENAME}
 fi
-eval OPTION_FILENAME=$(realpath $OPTION_FILENAME)
+eval OPTION_FILENAME=$(realpath -L $OPTION_FILENAME)
 build
 flush
